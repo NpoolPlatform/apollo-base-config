@@ -1,8 +1,10 @@
 #!/bin/bash
 APP_ID=$1
-PASSWORD=$2
-CLUSTERNAME=$3
+CLUSTERNAME=$2
 ENVIRONMENT=`echo $CLUSTERNAME | tr a-z A-Z`
+kubectl -n kube-system get secret mysql-password-secret -o jsonpath='{.data}'
+MYSQL_PASSWORD=`kubectl -n kube-system get secret mysql-password-secret -o jsonpath='{.data}' | awk -F 'rootpassword":"' '{ print $2 }' | awk -F '"' '{ print $1 }'`
+PASSWORD=`echo $MYSQL_PASSWORD | base64 --decode`
 
 kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "INSERT INTO App (AppId, Name, OrgId, OrgName, OwnerName, OwnerEmail,DataChange_CreatedBy, DataChange_LastModifiedBy) SELECT $APP_ID, \"test\", \"TEST1\", \"npool\", \"apollo\", \"apollo@acme.com\", \"apollo\", \"apollo\" FROM DUAL WHERE NOT EXISTS (SELECT * FROM App WHERE AppId=\"$APP_ID\");"
 
