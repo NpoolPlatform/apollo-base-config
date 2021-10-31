@@ -7,3 +7,7 @@
 ## apollo-base-config.sh
 - 创建该集群内服务相关信息，namespace以及权限配置
 - ./apollo-base-config.sh 89089012783789789719823798127398 development mysql-npool-top
+
+## apollo-item-config.sh
+- 添加该集群namespace的item信息
+./apollo-item-config.sh 89089012783789789719823798127398 development mysql-npool-top username root
