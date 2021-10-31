@@ -35,8 +35,8 @@ kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3
 
 kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloPortalDB -e "INSERT INTO Role (RoleName, DataChange_CreatedBy, DataChange_LastModifiedBy) SELECT \"ReleaseNamespace+$APP_ID+$APP_HOST+$ENVIRONMENT\", \"apollo\", \"apollo\" FROM DUAL WHERE NOT EXISTS (SELECT * FROM Role WHERE RoleName=\"ReleaseNamespace+$APP_ID+$APP_HOST+$ENVIRONMENT\");"
 
-id=`kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select Id from Namespace where NamespaceName=\"$APP_HOST\";"`
-appnamespaceid=`echo $id | awk '{ print $2 }'`
+# id=`kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select Id from Namespace where NamespaceName=\"$APP_HOST\";"`
+# appnamespaceid=`echo $id | awk '{ print $2 }'`
 
 # insert in Jenkinsfile
 # kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "INSERT INTO Item (NamespaceId, \`Key\`, Value, LineNum, DataChange_CreatedBy, DataChange_LastModifiedBy) SELECT $appnamespaceid, \"username\", \"root\", 1, \"apollo\", \"apollo\" FROM DUAL WHERE NOT EXISTS (SELECT * FROM Item WHERE NamespaceId=\"$appnamespaceid\" AND \`Key\`=\"username\");"
