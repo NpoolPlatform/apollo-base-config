@@ -2,8 +2,7 @@
 APP_ID=$1
 CLUSTERNAME=$2
 ENVIRONMENT=`echo $CLUSTERNAME | tr a-z A-Z`
-MYSQL_PASSWORD=`kubectl -n kube-system get secret mysql-password-secret -o jsonpath='{.data}' | awk -F 'rootpassword":"' '{ print $2 }' | awk -F '"' '{ print $1 }'`
-PASSWORD=`echo $MYSQL_PASSWORD | base64 --decode`
+PASSWORD=`kubectl get secret --namespace "kube-system" mysql-password-secret -o jsonpath="{.data.rootpassword}" | base64 --decode`
 
 while true;
 do
