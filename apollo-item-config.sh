@@ -14,10 +14,11 @@ do
   sleep 30
 done
 
-itemidx=`kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select Id from Namespace where NamespaceName=\"$APP_HOST\" and ClusterName=\"$CLUSTERNAME\";" | tail -n1`
-itemidx=`expr $itemidx + 1`
 
 id=`kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select Id from Namespace where NamespaceName=\"$APP_HOST\" and ClusterName=\"$CLUSTERNAME\";"`
 appnamespaceid=`echo $id | awk '{ print $2 }'`
+
+itemidx=`kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select Id from Item where NamespaceId=\"$appnamespaceid\";" | tail -n1`
+itemidx=`expr $itemidx + 1`
 
 kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "INSERT INTO Item (NamespaceId, \`Key\`, Value, LineNum, DataChange_CreatedBy, DataChange_LastModifiedBy) SELECT $appnamespaceid, \"$ITEM_KEY\", \"$ITEM_VALUE\", $itemidx, \"apollo\", \"apollo\" FROM DUAL WHERE NOT EXISTS (SELECT * FROM Item WHERE NamespaceId=\"$appnamespaceid\" AND \`Key\`=\"$ITEM_KEY\");"
