@@ -22,3 +22,13 @@ itemidx=`kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PAS
 itemidx=`expr $itemidx + 1`
 
 kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "INSERT INTO Item (NamespaceId, \`Key\`, Value, LineNum, DataChange_CreatedBy, DataChange_LastModifiedBy) SELECT $appnamespaceid, \"$ITEM_KEY\", \"$ITEM_VALUE\", $itemidx, \"apollo\", \"apollo\" FROM DUAL WHERE NOT EXISTS (SELECT * FROM Item WHERE NamespaceId=\"$appnamespaceid\" AND \`Key\`=\"$ITEM_KEY\");"
+
+if [[ "xdevelopment" == "x$CLUSTERNAME" || "xtesting" == "x$CLUSTERNAME" ]]; then
+  jsondata=$(kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select NamespaceId, CONCAT('{',GROUP_CONCAT(CONCAT('\"',\`key\`, '\":\"', Value, '\"')), '}') from Item where NamespaceId=$appnamespaceid group by NamespaceId;" | tail -n1 | awk '{ print $2 }')
+  echo $jsondata
+
+  name="`date +%Y%m%d%H%M%S`""-release"
+  releasekey="`date +%Y%m%d%H%M%S`""-""`cat /dev/urandom | od -x | sed 's/\s*//g' |cut -c 8-23 | head -n1`"
+
+  kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "INSERT INTO \`Release\` (ReleaseKey, Name, AppId, ClusterName, NamespaceName, Configurations) VALUES (\"$releasekey\", \"$name\", \"$APP_ID\", \"$CLUSTERNAME\", \"$APP_HOST\", '$jsondata');"
+fi
