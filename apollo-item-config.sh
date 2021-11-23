@@ -21,10 +21,10 @@ appnamespaceid=`echo $id | awk '{ print $2 }'`
 itemidx=`kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select Id from Item where NamespaceId=\"$appnamespaceid\";" | tail -n1`
 itemidx=`expr $itemidx + 1`
 
-kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "INSERT INTO Item (NamespaceId, \`Key\`, Value, LineNum, DataChange_CreatedBy, DataChange_LastModifiedBy) SELECT $appnamespaceid, \"$ITEM_KEY\", \"$ITEM_VALUE\", $itemidx, \"apollo\", \"apollo\" FROM DUAL WHERE NOT EXISTS (SELECT * FROM Item WHERE NamespaceId=\"$appnamespaceid\" AND \`Key\`=\"$ITEM_KEY\");"
+kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "INSERT INTO Item (NamespaceId, \`Key\`, Value, LineNum, DataChange_CreatedBy, DataChange_LastModifiedBy) SELECT $appnamespaceid, \"$ITEM_KEY\", \"$ITEM_VALUE\", $itemidx, \"apollo\", \"apollo\" FROM DUAL WHERE NOT EXISTS (SELECT * FROM Item WHERE NamespaceId=\"$appnamespaceid\" AND \`Key\`=\"$ITEM_KEY\" AND \`Value\`=\"$ITEM_VALUE\");"
 
 if [[ "xdevelopment" == "x$CLUSTERNAME" || "xtesting" == "x$CLUSTERNAME" ]]; then
-  jsondata=$(kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select NamespaceId, CONCAT('{',GROUP_CONCAT(CONCAT('\"',\`key\`, '\":\"', Value, '\"')), '}') from Item where NamespaceId=$appnamespaceid group by NamespaceId;" | tail -n1 | awk '{ print $2 }')
+  jsondata=$(kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select NamespaceId, CONCAT('{',GROUP_CONCAT(CONCAT('\"',\`key\`, '\":\"', Value, '\"')), '}') from Item where NamespaceId=$appnamespaceid AND \`Value\`!='' group by NamespaceId;" | tail -n1 | awk '{ print $2 }')
   echo $jsondata
 
   name="`date +%Y%m%d%H%M%S`""-release"
