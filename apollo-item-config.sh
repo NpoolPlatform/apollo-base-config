@@ -7,6 +7,8 @@ APP_HOST=$3
 ITEM_KEY=$4
 ITEM_VALUE=$5
 
+[ "x" == "x$ITEM_VALUE" ] && echo "ITEM_VALUE can not be null" && exit 1
+
 while true;
 do
   kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -e "show databases;" | grep Apollo > /dev/null
