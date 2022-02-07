@@ -37,8 +37,29 @@ kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3
 #  kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "INSERT INTO \`Release\` (ReleaseKey, Name, AppId, ClusterName, NamespaceName, Configurations) SELECT \"$releasekey\", \"$name\", \"$APP_ID\", \"$CLUSTERNAME\", \"$APP_HOST\", '$jsondata' FROM DUAL WHERE NOT EXISTS (SELECT * FROM \`Release\` WHERE ClusterName=\"$CLUSTERNAME\" AND NamespaceName=\"$APP_HOST\" AND Configurations='$jsondata');"
 #fi
 
-jsondata=$(kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select NamespaceId, CONCAT('{',GROUP_CONCAT(CONCAT('\"',\`key\`, '\":\"', Value, '\"')), '}') from Item where NamespaceId=$appnamespaceid AND \`Value\`!='' group by NamespaceId;" | tail -n1 | awk -F "\t" '{ print $2 }')
+count=$(kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select count(*) from Item where NamespaceId=$appnamespaceid;")
+count=`echo $count | awk '{ print $2 }'`
+
+jsondata=""
+for ((i=1;i<=$count;i++))
+do
+  keyvalue=$(kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select \`key\` from Item where NamespaceId=$appnamespaceid AND \`Value\`!='' limit $i;" | tail -n1)
+  echo $keyvalue
+  value=$(kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select Value from Item where NamespaceId=$appnamespaceid AND \`Value\`!='' limit $i;" | tail -n1)
+  value=$(echo $value | sed 's#"#\\\\\\"#g')
+  echo $value
+  if [ "x$jsondata" == "x" ]; then
+    jsondata='"'$keyvalue'":"'$value'"'
+  else
+    jsondata='"'$keyvalue'":"'$value'",'$jsondata
+  fi
+done
+
+jsondata='{'$jsondata'}'
 echo $jsondata
+
+# jsondata=$(kubectl -n kube-system exec mysql-0 -- mysql -h 127.0.0.1 -uroot -p$PASSWORD -P3306 -D ApolloConfigDB -e "select NamespaceId, CONCAT('{',GROUP_CONCAT(CONCAT('\"',\`key\`, '\":\"', Value, '\"')), '}') from Item where NamespaceId=$appnamespaceid AND \`Value\`!='' group by NamespaceId;" | tail -n1 | awk -F "\t" '{ print $2 }')
+# echo $jsondata
 
 name="`date +%Y%m%d%H%M%S`""-release"
 releasekey="`date +%Y%m%d%H%M%S`""-""`cat /dev/urandom | od -x | sed 's/\s*//g' |cut -c 8-23 | head -n1`"
